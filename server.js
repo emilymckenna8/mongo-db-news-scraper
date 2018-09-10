@@ -2,9 +2,11 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
 const exphbs = require("express-handlebars");
-
+const logger = require("morgan");
 const app = express();
 const PORT = process.env.PORT || 3000;
+var axios = require("axios");
+var cheerio = require("cheerio");
 
 app.use(bodyParser.urlencoded({ extended : true }));
 app.use(bodyParser.json());
@@ -15,51 +17,53 @@ app.use(logger("dev"));
 app.use(bodyParser.urlencoded({ extended: true }));
 // Use express.static to serve the public folder as a static directory
 app.use(express.static("public"));
-
+var db = require("./models");
 // Connect to the Mongo DB
-mongoose.connect("mongodb://localhost/mongoDBscraper");
+mongoose.connect("mongodb://localhost/scraperDB");
 
 // Routes
 
 // A GET route for scraping the echoJS website
 app.get("/scrape", function(req, res) {
   // First, we grab the body of the html with request
-  axios.get("https://pitchfork.com/reviews/albums/").then(function(response) {
+  axios.get("http://pitchfork.com/reviews/albums/").then(function(response) {
+    //console.log(response.data);
     // Then, we load that into cheerio and save it to $ for a shorthand selector
     var $ = cheerio.load(response.data);
 
     // Now, we grab every h2 within an article tag, and do the following:
     $("div.review").each(function(i, element) {
       // Save an empty result object
+      //console.log(element);
       var result = {};
 
       // Add the text and href of every link, and save them as properties of the result object
-      result.albumName = $(this)
-        .children("a.review_link")
-        .children("div.review_title")
-        .children("ul.artist-list review_title-artist")
+      result.artist = $(this)
+        .children("a.review__link")
+        .children("div.review__title")
+        .children("ul.artist-list")
         .children("li")
         .text();
-      result.artist = $(this)
-        .children("a.review_link")
-        .children("div.review_title")
-        .children("h2.review_title-album")
+      result.albumName = $(this)
+        .children("a.review__link")
+        .children("div.review__title")
+        .children("h2.review__title-album")
         .text();
       result.link = $(this)
-        .children("a.review_link")
+        .children("a.review__link")
         .attr("href");
       result.img = $(this)
-        .children("a.review_link")
-        .children("div.review_artwork artwork")
+        .children("a.review__link")
+        .children("div.review__artwork")
         .children("div")
         .children("img")
         .attr("src");  
-
+      console.log(result);
       // Create a new Article using the `result` object built from scraping
       db.Item.create(result)
         .then(function(dbItem) {
           // View the added result in the console
-          console.log(dbItem);
+          //console.log(dbItem);
         })
         .catch(function(err) {
           // If an error occurred, send it to the client

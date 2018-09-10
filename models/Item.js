@@ -16,8 +16,7 @@ const ItemSchema = new Schema({
     required: true
   },
   img: {
-    type: Boolean,
-    default: false
+    type: String,
   },
   comments: [
     {
