@@ -18,6 +18,10 @@ const ItemSchema = new Schema({
   img: {
     type: String,
   },
+  liked: {
+    type: Boolean,
+    default: false
+  },
   comments: [
     {
       type: Schema.Types.ObjectId,
